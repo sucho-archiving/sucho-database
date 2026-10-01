@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.astro/
+build/
+.env
+.cache/
+src/data/
+public/replay/
+*.db
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.vscode/
+.idea/
+*.log
