@@ -1,0 +1,179 @@
+---
+
+
+import PageLayout from "../../../layouts/PageLayout.astro";
+import { WIDTH, HEIGHT, path, features } from "../../../lib/ukraineMap.js";
+import { authorities, authorityLocation, authorityName } from "../../../lib/data.js";
+import { url, authorityUrl } from "../../../lib/url.js";
+
+const counts = new Map();
+const points = [];
+let unplaced = 0;
+for (const a of authorities) {
+  const loc = authorityLocation.get(String(a.ID));
+  if (loc.iso) counts.set(loc.iso, (counts.get(loc.iso) ?? 0) + 1);
+  else unplaced++;
+  if (loc.point) points.push({ a, point: loc.point });
+}
+const max = Math.max(1, ...counts.values());
+
+
+
+const fillOpacity = (n) => (n ? 0.14 + 0.76 * Math.sqrt(n / max) : 0);
+
+const listUrl = (iso) => `${url("/Archives/Authorities/")}?oblast=${iso}`;
+const ranked = features
+  .map((f) => ({ ...f.properties, n: counts.get(f.properties.iso) ?? 0 }))
+  .sort((x, y) => y.n - x.n || x.name_en.localeCompare(y.name_en));
+const fmt = (n) => n.toLocaleString("en-US");
+---
+
+<PageLayout title="Map – SUCHO Web Archives">
+  <h1>Map</h1>
+  <p class="muted">
+    Institutions with archived websites, by region. Brighter regions have more institutions; each
+    blue dot is one institution with known coordinates. Select a region to list its institutions.
+  </p>
+
+  <div class="layout">
+    <figure class="overview">
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label="Map of Ukraine with the number of archived institutions per region"
+      >
+        <g class="regions">
+          {
+            features.map((f) => {
+              const n = counts.get(f.properties.iso) ?? 0;
+              return (
+                <a href={listUrl(f.properties.iso)}>
+                  <title>{`${f.properties.name_en}: ${fmt(n)} ${n === 1 ? "institution" : "institutions"}`}</title>
+                  <path class="base" d={path(f)} />
+                  <path class="fill" d={path(f)} fill-opacity={fillOpacity(n).toFixed(3)} />
+                </a>
+              );
+            })
+          }
+        </g>
+        <g class="points">
+          {
+            points.map(({ a, point }) => (
+              <a href={authorityUrl(a.ID)}>
+                <title>{authorityName(a)}</title>
+                <circle cx={point[0].toFixed(1)} cy={point[1].toFixed(1)} r="2.6" />
+              </a>
+            ))
+          }
+        </g>
+      </svg>
+      {
+        unplaced > 0 && (
+          <figcaption class="muted">
+            {fmt(unplaced)} institutions have no location that matches a region and are not shown.
+          </figcaption>
+        )
+      }
+    </figure>
+
+    <ol class="ranking">
+      {
+        ranked.map((o) => (
+          <li>
+            <a href={listUrl(o.iso)}>
+              <span class="name">{o.name_en}</span>
+              <span class="num count">{fmt(o.n)}</span>
+              <span class="bar" style={`--w:${((o.n / max) * 100).toFixed(1)}%`} />
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</PageLayout>
+
+<style>
+  .layout {
+    display: grid;
+    gap: 2rem 3rem;
+    margin-top: 1.5rem;
+  }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr) 280px;
+      align-items: start;
+    }
+  }
+  .overview {
+    margin: 0;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .base {
+    fill: #34373d;
+  }
+  .fill {
+    fill: var(--yellow);
+  }
+  .regions path {
+    stroke: var(--bg);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+  }
+  .regions a:hover .base,
+  .regions a:focus-visible .base {
+    fill: #4a4e56;
+  }
+  .regions a:focus-visible {
+    outline: none;
+  }
+  .regions a:focus-visible path {
+    stroke: var(--text);
+    stroke-width: 2;
+  }
+  .points circle {
+    fill: var(--blue);
+    stroke: var(--bg);
+    stroke-width: 0.8;
+  }
+  .points a:hover circle {
+    fill: var(--text);
+  }
+  figcaption {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  .ranking {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.92rem;
+  }
+  .ranking a {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem 0.75rem;
+    padding: 0.35rem 0;
+    color: var(--text);
+  }
+  .ranking a:hover {
+    text-decoration: none;
+  }
+  .ranking a:hover .name {
+    text-decoration: underline;
+  }
+  .count {
+    color: var(--muted);
+  }
+  .bar {
+    grid-column: 1 / -1;
+    height: 3px;
+    background:
+      linear-gradient(var(--yellow), var(--yellow)) no-repeat left / var(--w) 100%,
+      var(--surface-2);
+    border-radius: 2px;
+  }
+</style>

@@ -1,0 +1,17 @@
+---
+import PageLayout from "../../../layouts/PageLayout.astro";
+import ResourceBrowser from "../../../components/ResourceBrowser.svelte";
+import StatusNote from "../../../components/StatusNote.astro";
+---
+
+<PageLayout title="Archived sites – SUCHO Web Archives">
+  <h1>Archived sites</h1>
+  <p class="muted">
+    Every website and online collection SUCHO archived, with its status at the most recent
+    online check.
+  </p>
+  <StatusNote label="What do online and offline mean here?" />
+  <ResourceBrowser client:only="svelte">
+    <p slot="fallback" class="muted">Loading archived sites…</p>
+  </ResourceBrowser>
+</PageLayout>

@@ -1,0 +1,63 @@
+---
+
+interface Props {
+  checks: [string, number][];
+}
+const { checks } = Astro.props;
+const online = checks.filter(([, o]) => o === 1).length;
+const last = checks.at(-1);
+// Många kontroller: mindre mellanrum, så att hela historiken ryms på bredden.
+const gap = checks.length > 150 ? 0 : checks.length > 60 ? 1 : 3;
+---
+
+{
+  checks.length === 0 ? (
+    <p class="muted">This site has not been included in the online status checks.</p>
+  ) : (
+    <figure class="strip-figure">
+      <div class="strip" style={`gap:${gap}px`} role="img" aria-label={`Online in ${online} of ${checks.length} checks`}>
+        {checks.map(([date, o]) => (
+          <span class:list={["cell", o === 1 ? "on" : "off"]} title={`${date}: ${o === 1 ? "online" : "offline"}`} />
+        ))}
+      </div>
+      <figcaption class="muted">
+        <span class="num">{checks[0][0]}</span>
+        <span>
+          Online in {online} of {checks.length} checks
+        </span>
+        <span class="num">{last[0]}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+<style>
+  .strip-figure {
+    margin: 0;
+    width: fit-content;
+    min-width: min(320px, 100%);
+    max-width: 100%;
+  }
+  .strip {
+    display: flex;
+  }
+  .cell {
+    flex: 0 1 10px;
+    min-width: 1px;
+    height: 28px;
+    border-radius: 2px;
+  }
+  .cell.on {
+    background: var(--online);
+  }
+  .cell.off {
+    box-shadow: inset 0 0 0 1.5px var(--offline-line);
+  }
+  figcaption {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+  }
+</style>

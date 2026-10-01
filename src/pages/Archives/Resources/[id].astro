@@ -1,0 +1,178 @@
+---
+
+import PageLayout from "../../../layouts/PageLayout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import ArchiveLinks from "../../../components/ArchiveLinks.astro";
+import OnlineStatusStrip from "../../../components/OnlineStatusStrip.astro";
+import ReplayViewer from "../../../components/ReplayViewer.astro";
+import StatusNote from "../../../components/StatusNote.astro";
+import { replaySource, replayPageUrl } from "../../../lib/replay.js";
+import {
+  resources,
+  authorityById,
+  onlineByResource,
+  authorityName,
+  lastStatus,
+  statusClass,
+  statusLabel,
+  splitUrl,
+} from "../../../lib/data.js";
+import { url, authorityUrl } from "../../../lib/url.js";
+
+export function getStaticPaths() {
+  return resources.map((resource) => ({
+    params: { id: String(resource.ID) },
+    props: { resource },
+  }));
+}
+
+const { resource: r } = Astro.props;
+const authority = r.auth_id ? authorityById.get(String(r.auth_id)) : null;
+const checks = onlineByResource[String(r.ID)] ?? [];
+const status = lastStatus(r.ID);
+const { host, path } = splitUrl(r.collection_url);
+
+const name = r.collection_name_en || r.collection_name_ver;
+const replay = replaySource(r);
+
+const facts = [
+  ["SUCHO ID", r.ID],
+  ["Archived", r.wacz_timestamp ?? "Unknown"],
+  ["Completeness", r.completeness],
+  ["Archive size", r.wacz_size],
+].filter(([, v]) => v !== null && v !== undefined && v !== "");
+---
+
+<PageLayout title={`${name ?? host + path} – SUCHO Web Archives`} description={r.description ?? undefined}>
+  <Breadcrumb section="Archived sites" />
+
+  {
+    name ? (
+      <>
+        <h1 class="title">{name}</h1>
+        {r.collection_name_en && r.collection_name_ver && (
+          <p class="ver" lang="uk">{r.collection_name_ver}</p>
+        )}
+        <p class="url-line">
+          <span class="host">{host}</span><span class="path">{path}</span>
+        </p>
+      </>
+    ) : (
+      <h1 class="title">
+        <span class="host">{host}</span><span class="path">{path}</span>
+      </h1>
+    )
+  }
+  {
+    authority && (
+      <p class="inst">
+        Website of <a href={authorityUrl(authority.ID)}>{authorityName(authority)}</a>
+      </p>
+    )
+  }
+
+  {r.description && <p class="description">{r.description}</p>}
+
+  <ArchiveLinks resource={r} />
+
+  {
+    replay && (
+      <section class="viewer">
+        <ReplayViewer
+          source={replay.source}
+          startUrl={replay.url}
+          label={host}
+          fullPageUrl={replayPageUrl(r.ID)}
+        />
+      </section>
+    )
+  }
+
+  <dl class="facts">
+    {
+      facts.map(([k, v]) => (
+        <div>
+          <dt>{k}</dt>
+          <dd class="num">{v}</dd>
+        </div>
+      ))
+    }
+    <div>
+      <dt>Original address</dt>
+      <dd><a href={r.collection_url} target="_blank" rel="noopener nofollow">{r.collection_url}</a></dd>
+    </div>
+  </dl>
+
+  <h2>Is the original still online?</h2>
+  <p class="status">
+    <span class={`dot ${statusClass(status)}`} />
+    {statusLabel(status)}{checks.length > 0 && <span class="muted num"> ({checks.at(-1)[0]})</span>}
+  </p>
+  <OnlineStatusStrip checks={checks} />
+  <StatusNote />
+  <p class="json">
+    <a href={url(`/Archives/Resources/${r.ID}.json`)}>Data as JSON, including status history</a>
+  </p>
+</PageLayout>
+
+<style>
+  .title {
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+    overflow-wrap: anywhere;
+    margin-bottom: 0.4rem;
+  }
+  .title .path,
+  .url-line .path {
+    color: var(--muted);
+  }
+  .ver {
+    font-size: 1.2rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+  .url-line {
+    font-size: 1.1rem;
+    overflow-wrap: anywhere;
+    margin-bottom: 0.3rem;
+  }
+  .viewer {
+    margin-top: 1.5rem;
+  }
+  .description {
+    margin: 1rem 0 1.5rem;
+  }
+  .inst {
+    font-size: 1.15rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1rem 2rem;
+    margin: 2rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .facts div:last-child {
+    grid-column: 1 / -1;
+  }
+  dt {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+  }
+  .json {
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+  }
+</style>

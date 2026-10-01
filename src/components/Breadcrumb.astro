@@ -1,0 +1,23 @@
+---
+import { url } from "../lib/url.js";
+interface Props {
+  section: "Institutions" | "Archived sites";
+}
+const { section } = Astro.props;
+const href = url(section === "Institutions" ? "/Archives/Authorities/" : "/Archives/Resources/");
+---
+
+<p class="crumb"><a href={href}>← {section}</a></p>
+
+<style>
+  .crumb {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+  .crumb a {
+    color: var(--muted);
+  }
+  .crumb a:hover {
+    color: var(--text);
+  }
+</style>

@@ -1,0 +1,89 @@
+---
+import { WIDTH, HEIGHT, path, byIso } from "../lib/ukraineMap.js";
+import { url } from "../lib/url.js";
+
+interface Props {
+  location: { iso: string | null; point: [number, number] | null; lat: number | null; long: number | null };
+  label: string;
+}
+const { location, label } = Astro.props;
+const { iso, point, lat, long } = location;
+const oblast = iso ? byIso.get(iso) : null;
+const osmUrl =
+  point && `https://www.openstreetmap.org/?mlat=${lat}&mlon=${long}#map=15/${lat}/${long}`;
+---
+
+{
+  (oblast || point) && (
+    <figure class="ua-map">
+      <div class="stage">
+        <img src={url("/static/ukraine-base.svg")} alt="" width={WIDTH} height={HEIGHT} />
+        <svg
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          role="img"
+          aria-label={`Map of Ukraine showing the location of ${label}${oblast ? ` in ${oblast.properties.name_en}` : ""}`}
+        >
+          {oblast && <path class="oblast" d={path(oblast)} />}
+          {point && (
+            <g transform={`translate(${point[0].toFixed(1)} ${point[1].toFixed(1)})`}>
+              <circle class="halo" r="14" />
+              <circle class="pin" r="6" />
+            </g>
+          )}
+        </svg>
+      </div>
+      <figcaption>
+        {oblast && (
+          <span>
+            {oblast.properties.name_en} <span class="muted" lang="uk">{oblast.properties.name_uk}</span>
+          </span>
+        )}
+        {osmUrl && (
+          <a href={osmUrl} target="_blank" rel="noopener">
+            View in OpenStreetMap
+          </a>
+        )}
+      </figcaption>
+    </figure>
+  )
+}
+
+<style>
+  .ua-map {
+    margin: 0;
+    width: 100%;
+  }
+  .stage {
+    position: relative;
+    aspect-ratio: 800 / 540;
+  }
+  .stage img,
+  .stage svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .oblast {
+    fill: rgba(255, 213, 0, 0.22);
+    stroke: var(--yellow);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+  .halo {
+    fill: rgba(255, 213, 0, 0.25);
+  }
+  .pin {
+    fill: var(--yellow);
+    stroke: var(--bg);
+    stroke-width: 2;
+  }
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+</style>

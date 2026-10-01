@@ -1,0 +1,57 @@
+---
+
+
+import PageLayout from "../../../../layouts/PageLayout.astro";
+import ReplayViewer from "../../../../components/ReplayViewer.astro";
+import { resources, splitUrl } from "../../../../lib/data.js";
+import { replaySource, externalReplayUrl } from "../../../../lib/replay.js";
+import { resourceUrl, waybackUrl } from "../../../../lib/url.js";
+
+export function getStaticPaths() {
+  return resources
+    .filter((r) => replaySource(r))
+    .map((resource) => ({ params: { id: String(resource.ID) }, props: { resource } }));
+}
+
+const { resource: r } = Astro.props;
+const replay = replaySource(r);
+const { host, path } = splitUrl(r.collection_url);
+const name = r.collection_name_en || r.collection_name_ver || `${host}${path}`;
+const archived = r.wacz_timestamp ? String(r.wacz_timestamp).slice(0, 10) : null;
+---
+
+<PageLayout title={`Archive: ${name} – SUCHO Web Archives`} fullBleed>
+  <div class="bar">
+    <a class="back" href={resourceUrl(r.ID)}>← {name}</a>
+    <span class="meta muted">
+      {archived && <span class="num">Archived {archived}</span>}
+    </span>
+    <span class="links">
+      <a href={externalReplayUrl(r)} target="_blank" rel="noopener">Open in ReplayWeb.page</a>
+      <a href={waybackUrl(r.collection_url)} target="_blank" rel="noopener">Wayback Machine</a>
+    </span>
+  </div>
+  <ReplayViewer source={replay.source} startUrl={replay.url} label={host} mode="full" />
+</PageLayout>
+
+<style>
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1.5rem;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.92rem;
+  }
+  .back {
+    color: var(--text);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .links {
+    display: flex;
+    gap: 1.25rem;
+    margin-left: auto;
+  }
+</style>

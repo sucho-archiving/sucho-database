@@ -1,0 +1,19 @@
+---
+import PageLayout from "../../../layouts/PageLayout.astro";
+import InstitutionBrowser from "../../../components/InstitutionBrowser.svelte";
+import StatusNote from "../../../components/StatusNote.astro";
+---
+
+<PageLayout title="Institutions – SUCHO Web Archives">
+  <h1>Institutions</h1>
+  <p class="muted">
+    Cultural institutions whose websites or collections were web-archived. Each dot is one
+    archive: <span class="dot on"></span> still online, <span class="dot off"></span> offline at
+    the last check.
+  </p>
+  <StatusNote label="What do online and offline mean here?" />
+  <!-- client:only: komponenten körs bara i webbläsaren och hämtar Authorities.json -->
+  <InstitutionBrowser client:only="svelte">
+    <p slot="fallback" class="muted">Loading institutions…</p>
+  </InstitutionBrowser>
+</PageLayout>

@@ -1,0 +1,210 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import Mosaic from "../components/Mosaic.astro";
+import StatusNote from "../components/StatusNote.astro";
+import { stats, resources, lastStatus, lastCheckDate } from "../lib/data.js";
+import { url } from "../lib/url.js";
+
+const fmt = (n) => n.toLocaleString("en-US");
+const { counts, authorities_by_type } = stats;
+
+// Räkna från samma data som mosaiken, så att siffror och bild alltid stämmer.
+const statuses = resources.map((r) => lastStatus(r.ID));
+const online = statuses.filter((s) => s === 1).length;
+const offline = statuses.filter((s) => s === 0).length;
+const unchecked = statuses.length - online - offline;
+
+const instUrl = url("/Archives/Authorities/");
+const resUrl = url("/Archives/Resources/");
+const types = authorities_by_type.filter((t) => t.type);
+---
+
+<PageLayout title="SUCHO Web Archives">
+  <section class="hero">
+    <div class="intro">
+      <div>
+        <h1>Web archives of Ukrainian cultural institutions</h1>
+        <p class="lede">
+          Since March 2022, SUCHO volunteers have archived the websites of museums, archives,
+          libraries, churches and art centers across Ukraine.
+        </p>
+      </div>
+      <img
+        class="logo"
+        src={url("/static/sucho-logo-440.png")}
+        width="220"
+        height="220"
+        alt="Saving Ukrainian Cultural Heritage Online (SUCHO)"
+      />
+    </div>
+
+    {
+      online + offline > 0 ? (
+        <>
+          <Mosaic />
+
+          <div class="legend">
+            <p>
+              Each square is one of the <strong class="num">{fmt(resources.length)}</strong> archived
+              websites, in the order they were saved.{" "}
+              {lastCheckDate && <>At the last check on <span class="num">{lastCheckDate}</span>:</>}
+            </p>
+            <ul>
+              <li>
+                <span class="dot on"></span>
+                <a href={`${resUrl}?status=online`}><strong class="num">{fmt(online)}</strong> still online</a>
+              </li>
+              <li>
+                <span class="dot off"></span>
+                <a href={`${resUrl}?status=offline`}><strong class="num">{fmt(offline)}</strong> offline</a>
+              </li>
+              {
+                unchecked > 0 && (
+                  <li>
+                    <span class="dot unknown" />
+                    <span><strong class="num">{fmt(unchecked)}</strong> not checked</span>
+                  </li>
+                )
+              }
+            </ul>
+          </div>
+          <StatusNote label="What do online and offline mean here?" />
+        </>
+      ) : (
+        <p class="no-status muted">
+          The {fmt(counts.resources)} archived websites have not been checked for online status
+          yet. Run <code>scripts/import_status.py</code> or <code>scripts/check_status.py</code>{" "}
+          (see README).
+        </p>
+      )
+    }
+  </section>
+
+  <section class="explore">
+    <div>
+      <h2><a href={instUrl}>Institutions</a></h2>
+      <p class="muted">
+        <span class="num">{fmt(counts.authorities)}</span> cultural institutions whose sites or
+        collections were archived, with location, Wikidata and VIAF links. You can also{" "}
+        <a href={url("/Archives/Map/")}>see them on a map</a>.
+      </p>
+      <ul class="chips">
+        {
+          types.map((t) => (
+            <li>
+              <a href={`${instUrl}?institution_type=${encodeURIComponent(t.type)}`}>
+                {t.type} <span class="num muted">{fmt(t.count)}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div>
+      <h2><a href={resUrl}>Archived sites</a></h2>
+      <p class="muted">
+        Every web archive SUCHO created, with its capture date, online status history and links
+        to replay the archived copy.
+      </p>
+      <a class="button" href={resUrl}>Browse all {fmt(counts.resources)} archived sites</a>
+      <p class="muted stats-link">
+        How many are still online, region by region?
+        See the <a href={url("/Archives/Statistics/")}>statistics</a>.
+      </p>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem 3rem;
+  }
+  .intro h1 {
+    max-width: 18ch;
+  }
+  .logo {
+    width: clamp(120px, 18vw, 220px);
+    height: auto;
+  }
+  @media (max-width: 640px) {
+    .intro {
+      grid-template-columns: 1fr;
+    }
+    .logo {
+      grid-row: 1;
+      width: 110px;
+    }
+  }
+  .lede {
+    font-size: 1.2rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+  .no-status {
+    padding: 1.25rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    margin-top: 1rem;
+  }
+  .legend p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .legend ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .legend a {
+    color: var(--text);
+  }
+  .explore {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem 4rem;
+    margin-top: 2rem;
+  }
+  .explore h2 a {
+    color: var(--text);
+  }
+  .stats-link {
+    margin-top: 1.25rem;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .chips a {
+    display: inline-block;
+    padding: 0.3em 0.8em;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .chips a:hover {
+    border-color: var(--yellow);
+    text-decoration: none;
+  }
+</style>

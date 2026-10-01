@@ -1,0 +1,125 @@
+---
+
+import { resources, lastStatus, statusClass } from "../lib/data.js";
+
+
+const ordered = [...resources].sort((a, b) =>
+  String(a.wacz_timestamp ?? "9999").localeCompare(String(b.wacz_timestamp ?? "9999")),
+);
+const cells = ordered.map((r) => statusClass(lastStatus(r.ID)));
+const total = cells.length.toLocaleString("en-US");
+---
+
+<div class="mosaic-wrap collapsed">
+  <div class="mosaic" id="mosaic" aria-hidden="true">
+    {cells.map((c) => <i class={c} />)}
+  </div>
+  <div class="fade" aria-hidden="true"></div>
+</div>
+<button class="button toggle" type="button" aria-controls="mosaic" aria-expanded="false" hidden>
+  <span class="when-collapsed">Show all {total} sites</span>
+  <span class="when-expanded">Show fewer</span>
+</button>
+
+<noscript>
+  <style>
+    .mosaic-wrap.collapsed .mosaic { max-height: none !important; }
+    .mosaic-wrap .fade { display: none !important; }
+  </style>
+</noscript>
+
+<script>
+  const wrap = document.querySelector<HTMLElement>(".mosaic-wrap");
+  const mosaic = document.querySelector<HTMLElement>("#mosaic");
+  const button = document.querySelector<HTMLButtonElement>(".mosaic-wrap + .toggle");
+
+  if (wrap && mosaic && button) {
+    // Ryms allt redan i den hopfällda höjden behövs ingen knapp.
+    if (mosaic.scrollHeight <= mosaic.clientHeight + 4) {
+      wrap.classList.remove("collapsed");
+    } else {
+      button.hidden = false;
+      button.addEventListener("click", () => {
+        const expanded = wrap.classList.toggle("collapsed") === false;
+        button.setAttribute("aria-expanded", String(expanded));
+        // När man fäller ihop igen: scrolla tillbaka till mosaikens början.
+        if (!expanded) wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
+  }
+</script>
+
+<style>
+  .mosaic-wrap {
+    position: relative;
+  }
+  .mosaic {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 9px);
+    gap: 3px;
+    padding: 1.25rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+  }
+  .collapsed .mosaic {
+    /* Ungefär sju rader rutor */
+    max-height: calc(7 * 12px + 2.5rem);
+    overflow: hidden;
+  }
+  .fade {
+    display: none;
+  }
+  .collapsed .fade {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3.5rem;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: linear-gradient(to bottom, transparent, var(--surface) 85%);
+    pointer-events: none;
+  }
+  i {
+    width: 9px;
+    height: 9px;
+    border-radius: 1px;
+  }
+  .on {
+    background: var(--online);
+  }
+  .off {
+    box-shadow: inset 0 0 0 1px var(--offline-line);
+  }
+  .unknown {
+    background: var(--unknown);
+  }
+  .toggle {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    padding: 0.4em 0.9em;
+  }
+  .toggle .when-expanded,
+  .toggle[aria-expanded="true"] .when-collapsed {
+    display: none;
+  }
+  .toggle[aria-expanded="true"] .when-expanded {
+    display: inline;
+  }
+
+  /* Mindre rutor på mobil */
+  @media (max-width: 600px) {
+    .mosaic {
+      grid-template-columns: repeat(auto-fill, 5px);
+      gap: 2px;
+      padding: 0.75rem;
+    }
+    .collapsed .mosaic {
+      max-height: calc(12 * 7px + 1.5rem);
+    }
+    i {
+      width: 5px;
+      height: 5px;
+    }
+  }
+</style>
