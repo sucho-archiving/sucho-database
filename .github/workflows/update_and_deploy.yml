@@ -2,7 +2,7 @@ name: Update data and deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   schedule:
     - cron: "0 3 1 * *" # 03:00 UTC den 1:a every month status
     - cron: "0 4 * * 1" # 04:00 UTC monday from Baserow
