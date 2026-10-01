@@ -1,0 +1,28 @@
+{
+  "name": "sucho-archives",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-data": "python3 scripts/fetch_baserow.py && python3 scripts/export.py",
+    "fetch-data:offline": "python3 scripts/fetch_baserow.py --offline && python3 scripts/export.py",
+    "check-status": "python3 scripts/check_status.py && python3 scripts/export.py",
+    "sample-data": "python3 scripts/make_sample_db.py && python3 scripts/export.py --db sample.db",
+    "predev": "node scripts/copy-replay.mjs",
+    "dev": "astro dev",
+    "prebuild": "node scripts/copy-replay.mjs",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^9.0.1",
+    "@fontsource-variable/jost": "^5.3.0",
+    "astro": "^7.3.5",
+    "d3-geo": "^3.1.1",
+    "replaywebpage": "2.5.3",
+    "svelte": "^5.57.1"
+  },
+  "devDependencies": {
+    "mapshaper": "^0.7.71"
+  }
+}

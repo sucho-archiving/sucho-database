@@ -1,0 +1,192 @@
+
+
+:root {
+  --bg: #26282c;
+  --surface: #2f3237;
+  --surface-2: #383c42;
+  --line: #474b53;
+  --text: #eceef1;
+  --muted: #a2a8b2;
+
+  --yellow: #ffd500;
+  --blue: #5b9bf0;
+  --blue-deep: #0057b7;
+
+  --online: var(--yellow);
+  --offline: transparent;
+  --offline-line: #6b717b;
+  --unknown: #3a3d43;
+
+  --font: "Jost Variable", "Jost", system-ui, sans-serif;
+  --wrap: min(1120px, 100% - 2.5rem);
+  --radius: 4px;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  width: var(--wrap);
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+
+body.full-bleed {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+body.full-bleed main {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+::selection {
+  background: var(--yellow);
+  color: #111;
+}
+
+
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  margin: 0 0 0.5em;
+  font-weight: 600;
+}
+h1 {
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+h2 {
+  font-size: 1.6rem;
+  font-weight: 500;
+  margin-top: 2.5rem;
+}
+h3 {
+  font-size: 1.15rem;
+}
+p {
+  margin: 0 0 1em;
+  max-width: 68ch;
+}
+
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+[lang="uk"] {
+  font-weight: 400;
+}
+
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.55em 1em;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.button:hover {
+  border-color: var(--muted);
+  text-decoration: none;
+}
+.button.primary {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #1b1b1b;
+  font-weight: 500;
+}
+.button.primary:hover {
+  background: #ffe04d;
+}
+
+input[type="search"],
+select {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 0.8em;
+}
+input[type="search"]::placeholder {
+  color: var(--muted);
+}
+
+
+.dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  flex-shrink: 0;
+  vertical-align: 0.05em;
+}
+.dot.on {
+  background: var(--online);
+}
+.dot.off {
+  background: var(--offline);
+  box-shadow: inset 0 0 0 1.5px var(--offline-line);
+}
+.dot.unknown {
+  background: var(--unknown);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

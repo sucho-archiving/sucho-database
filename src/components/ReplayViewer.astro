@@ -1,0 +1,162 @@
+---
+
+import { url } from "../lib/url.js";
+
+interface Props {
+  source: string;
+  startUrl: string;
+  label: string;
+  mode?: "inline" | "full";
+  fullPageUrl?: string;
+}
+const { source, startUrl, label, mode = "inline", fullPageUrl } = Astro.props;
+---
+
+<div
+  class:list={["replay", mode]}
+  data-source={source}
+  data-url={startUrl}
+  data-replay-base={url("/replay/")}
+  data-ui={url("/replay/ui.js")}
+  data-mode={mode}
+>
+  {
+    mode === "inline" && (
+      <button class="poster" type="button">
+        <span class="play" aria-hidden="true" />
+        <span class="poster-text">
+          <strong>View the archived website</strong>
+          <span class="muted">{label}, as SUCHO saved it</span>
+        </span>
+      </button>
+    )
+  }
+</div>
+{
+  mode === "inline" && fullPageUrl && (
+    <p class="full-link">
+      <a href={fullPageUrl}>Open in full screen</a>
+    </p>
+  )
+}
+
+<script>
+
+  function loadUi(src: string) {
+    if (!document.querySelector("script[data-rwp-ui]")) {
+      const s = document.createElement("script");
+      s.src = src;
+      s.dataset.rwpUi = "";
+
+      s.addEventListener("load", () => {
+        if (document.readyState === "complete") window.dispatchEvent(new Event("load"));
+      });
+      document.head.append(s);
+    }
+    return customElements.whenDefined("replay-web-page");
+  }
+
+  async function start(el: HTMLElement) {
+    if (el.dataset.started) return;
+    el.dataset.started = "1";
+    el.classList.add("loading");
+    await loadUi(el.dataset.ui!);
+
+    const rwp = document.createElement("replay-web-page");
+    rwp.setAttribute("source", el.dataset.source!);
+    rwp.setAttribute("url", el.dataset.url!);
+    rwp.setAttribute("replayBase", el.dataset.replayBase!);
+    rwp.setAttribute("embed", "default");
+    if (el.dataset.mode === "full") rwp.setAttribute("deepLink", "");
+
+    el.querySelector(".poster")?.remove();
+    el.append(rwp);
+    el.classList.remove("loading");
+  }
+
+  for (const el of document.querySelectorAll<HTMLElement>(".replay")) {
+    if (el.dataset.mode === "full") start(el);
+    else el.querySelector(".poster")?.addEventListener("click", () => start(el));
+  }
+</script>
+
+<style>
+  .replay {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .replay.inline {
+    aspect-ratio: 16 / 10;
+    min-height: 420px;
+  }
+  .replay.full {
+    flex: 1;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .replay :global(replay-web-page) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .poster {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 23px, rgba(255, 255, 255, 0.025) 23px 24px),
+      var(--surface);
+    border: 0;
+    cursor: pointer;
+    text-align: center;
+  }
+  .poster:hover .play {
+    transform: scale(1.06);
+  }
+  .play {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--yellow);
+    position: relative;
+    transition: transform 0.15s ease;
+  }
+  .play::after {
+    content: "";
+    position: absolute;
+    left: 29px;
+    top: 22px;
+    border-style: solid;
+    border-width: 14px 0 14px 22px;
+    border-color: transparent transparent transparent #1b1b1b;
+  }
+  .poster-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 1.05rem;
+  }
+  .loading::after {
+    content: "Loading archive…";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .full-link {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+</style>

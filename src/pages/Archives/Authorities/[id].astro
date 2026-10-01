@@ -1,0 +1,186 @@
+---
+
+
+import PageLayout from "../../../layouts/PageLayout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import ArchiveLinks from "../../../components/ArchiveLinks.astro";
+import UkraineMap from "../../../components/UkraineMap.astro";
+import {
+  authorities,
+  resourcesByAuthority,
+  authorityName,
+  lastStatus,
+  statusClass,
+  statusLabel,
+  splitUrl,
+  authorityLocation,
+} from "../../../lib/data.js";
+import { url, resourceUrl } from "../../../lib/url.js";
+
+export function getStaticPaths() {
+  return authorities.map((authority) => ({
+    params: { id: String(authority.ID) },
+    props: { authority },
+  }));
+}
+
+const { authority: a } = Astro.props;
+const name = authorityName(a);
+const archives = (resourcesByAuthority.get(String(a.ID)) ?? []).map((r) => ({
+  ...r,
+  status: lastStatus(r.ID),
+  ...splitUrl(r.collection_url),
+}));
+const location = authorityLocation.get(String(a.ID));
+const hasMap = Boolean(location.iso || location.point);
+
+const facts = [
+  ["Type", a.institution_type],
+  ["District", a.district_en],
+  ["District (Ukrainian)", a.district_ver],
+].filter(([, v]) => v);
+---
+
+<PageLayout title={`${name} – SUCHO Web Archives`}>
+  <Breadcrumb section="Institutions" />
+
+  <div class:list={["top", { "with-map": hasMap }]}>
+    <div>
+      <h1>{name}</h1>
+      {a.name_en && a.name_ver && <p class="ver" lang="uk">{a.name_ver}</p>}
+
+      <dl class="facts">
+        {
+          facts.map(([k, v]) => (
+            <div>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))
+        }
+        {
+          a.qid && (
+            <div>
+              <dt>Wikidata</dt>
+              <dd><a href={`https://www.wikidata.org/wiki/${a.qid}`} target="_blank" rel="noopener">{a.qid}</a></dd>
+            </div>
+          )
+        }
+        {
+          a.VIAF && (
+            <div>
+              <dt>VIAF</dt>
+              <dd><a href={`https://viaf.org/viaf/${a.VIAF}`} target="_blank" rel="noopener">{a.VIAF}</a></dd>
+            </div>
+          )
+        }
+      </dl>
+      <p class="json"><a href={url(`/Archives/Authorities/${a.ID}.json`)}>Data as JSON</a></p>
+    </div>
+
+    {
+      hasMap && (
+        <div class="map">
+          <UkraineMap location={location} label={name} />
+        </div>
+      )
+    }
+  </div>
+
+  <h2>Web archives <span class="muted num">{archives.length}</span></h2>
+  {
+    archives.length === 0 ? (
+      <p class="muted">No web archives are recorded for this institution.</p>
+    ) : (
+      <ol class="archives">
+        {archives.map((r) => (
+          <li>
+            <span class={`dot ${statusClass(r.status)}`} title={statusLabel(r.status)} />
+            <div class="what">
+              <a class="url" href={resourceUrl(r.ID)}>
+                <span class="host">{r.host}</span>
+                <span class="path">{r.path}</span>
+              </a>
+              <span class="when num muted">
+                {r.wacz_timestamp ? `Archived ${r.wacz_timestamp}` : "Archive date unknown"}
+              </span>
+            </div>
+            <ArchiveLinks resource={r} compact />
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</PageLayout>
+
+<style>
+  .top {
+    display: grid;
+    gap: 2rem 3rem;
+  }
+  @media (min-width: 860px) {
+    .top.with-map {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    }
+  }
+  h1 {
+    margin-bottom: 0.3rem;
+  }
+  .ver {
+    font-size: 1.35rem;
+    color: var(--muted);
+    margin-bottom: 1.75rem;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 1rem 2rem;
+    margin: 1.5rem 0;
+  }
+  dt {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  dd {
+    margin: 0;
+  }
+  .json {
+    font-size: 0.9rem;
+  }
+  .map {
+    align-self: start;
+  }
+  .archives {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .archives li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 0.9rem 0.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .what {
+    flex: 1 1 320px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .url {
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .host {
+    font-weight: 500;
+  }
+  .path {
+    color: var(--muted);
+  }
+  .when {
+    font-size: 0.88rem;
+  }
+</style>

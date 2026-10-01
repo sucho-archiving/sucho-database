@@ -1,0 +1,389 @@
+---
+
+
+import PageLayout from "../../../layouts/PageLayout.astro";
+import BarList from "../../../components/charts/BarList.astro";
+import StatusBars from "../../../components/charts/StatusBars.astro";
+import TimeChart from "../../../components/charts/TimeChart.astro";
+import StatusNote from "../../../components/StatusNote.astro";
+import { WIDTH, HEIGHT, path, byIso } from "../../../lib/ukraineMap.js";
+import {
+  keyFigures as k,
+  formatBytes,
+  onlineOverTime,
+  archivingTimeline,
+  archivingSummary as arch,
+  statusByType,
+  statusByRegion,
+  MIN_FOR_SHARE,
+  recentlyOffline,
+  authoritiesByType,
+  mostArchived,
+  completeness,
+  recordCoverage,
+} from "../../../lib/stats.js";
+import { splitUrl } from "../../../lib/data.js";
+import { url, authorityUrl, resourceUrl } from "../../../lib/url.js";
+
+const fmt = (n) => n.toLocaleString("en-US");
+const pct = (n) => `${Math.round(n)}%`;
+const instUrl = url("/Archives/Authorities/");
+const regionsRanked = statusByRegion
+  .filter((r) => r.enough)
+  .sort((a, b) => a.onlinePct - b.onlinePct)
+  .map((r) => ({ ...r, key: r.name_en }));
+---
+
+<PageLayout title="Statistics – SUCHO Web Archives">
+  <h1>Statistics</h1>
+  <p class="lede muted">
+    What SUCHO archived, when, and how much of it is still online.{" "}
+    {k.lastCheck && <>Online status as of the latest check on <span class="num">{k.lastCheck}</span>.</>}
+  </p>
+
+  <dl class="figures">
+    <div>
+      <dt>Archived websites</dt>
+      <dd class="num">{fmt(k.resources)}</dd>
+    </div>
+    <div>
+      <dt>Institutions</dt>
+      <dd class="num">{fmt(k.authorities)}</dd>
+    </div>
+    {
+      k.bytes > 0 && (
+        <div>
+          <dt>Archived data</dt>
+          <dd class="num">{formatBytes(k.bytes)}</dd>
+        </div>
+      )
+    }
+    {
+      k.checked > 0 && (
+        <div>
+          <dt>Offline at last check</dt>
+          <dd class="num">
+            {pct(k.offlinePct)} <span class="of">{fmt(k.offline)} sites</span>
+          </dd>
+        </div>
+      )
+    }
+  </dl>
+
+  <nav class="toc" aria-label="On this page">
+    <a href="#online">Still online</a>
+    <a href="#regions">By region</a>
+    <a href="#types">By type</a>
+    <a href="#recent">Recently offline</a>
+    <a href="#archiving">Archiving timeline</a>
+    <a href="#institutions">Institutions</a>
+    <a href="#records">Records</a>
+  </nav>
+
+  {
+    onlineOverTime.length > 0 && (
+      <section id="online">
+        <h2>How much is still online</h2>
+        <p class="muted">
+          Share of archived websites whose original address still responds, at each status
+          check. Every drop is a set of sites where the SUCHO archive may now be the only copy.
+        </p>
+        <StatusNote />
+        <TimeChart
+          points={onlineOverTime.map((d) => ({
+            date: d.date,
+            value: d.pct,
+            title: `${d.date}: ${pct(d.pct)} online (${fmt(d.online)} of ${fmt(d.total)})`,
+          }))}
+          yMax={100}
+          yFormat={(n) => `${Math.round(n)}%`}
+          label="Share of archived websites still online at each check"
+        />
+      </section>
+    )
+  }
+
+  <section id="regions">
+    <h2>Still online, by region</h2>
+    <p class="muted">
+      Brighter regions have a larger share of their archived websites still online. Regions with
+      fewer than {MIN_FOR_SHARE} checked sites are hatched.
+    </p>
+    <div class="region-layout">
+      <svg class="choropleth" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Map of Ukraine showing the share of archived websites still online in each region">
+        <defs>
+          <pattern id="few" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#4a4e56" stroke-width="2" />
+          </pattern>
+        </defs>
+        {
+          statusByRegion.map((r) => (
+            <a href={`${instUrl}?oblast=${r.iso}`}>
+              <title>
+                {r.enough
+                  ? `${r.name_en}: ${pct(r.onlinePct)} of ${fmt(r.checked)} sites online`
+                  : `${r.name_en}: ${fmt(r.checked)} checked sites (too few for a share)`}
+              </title>
+              <path class="base" d={path(byIso.get(r.iso))} />
+              {r.enough ? (
+                <path class="fill" d={path(byIso.get(r.iso))} fill-opacity={(0.08 + 0.85 * (r.onlinePct / 100)).toFixed(3)} />
+              ) : (
+                <path d={path(byIso.get(r.iso))} fill="url(#few)" />
+              )}
+            </a>
+          ))
+        }
+      </svg>
+      <div>
+        <div class="legend" aria-hidden="true">
+          <span>0% online</span><span class="ramp" /><span>100%</span>
+        </div>
+        <StatusBars rows={regionsRanked} />
+      </div>
+    </div>
+  </section>
+
+  {
+    statusByType.length > 0 && (
+      <section id="types">
+        <h2>Still online, by type of institution</h2>
+        <p class="muted">Some kinds of institutions have lost more of their websites than others.</p>
+        <div class="narrow">
+          <StatusBars rows={statusByType} />
+        </div>
+      </section>
+    )
+  }
+
+  {
+    recentlyOffline.list.length > 0 && (
+      <section id="recent">
+        <h2>Recently offline</h2>
+        <p class="muted">
+          Online at the check on <span class="num">{recentlyOffline.from}</span>, offline on{" "}
+          <span class="num">{recentlyOffline.to}</span>: {fmt(recentlyOffline.list.length)} sites.
+        </p>
+        <ul class="gone">
+          {recentlyOffline.list.slice(0, 25).map(({ r, institution }) => {
+            const { host, path: p } = splitUrl(r.collection_url);
+            return (
+              <li>
+                <span class="dot off" />
+                <a href={resourceUrl(r.ID)}>
+                  <span class="host">{host}</span>
+                  <span class="muted">{p}</span>
+                </a>
+                {institution && (
+                  <a class="inst" href={authorityUrl(institution.id)}>
+                    {institution.name}
+                  </a>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {recentlyOffline.list.length > 25 && (
+          <p>
+            <a href={`${url("/Archives/Resources/")}?status=offline`}>See all offline sites</a>
+          </p>
+        )}
+      </section>
+    )
+  }
+
+  {
+    archivingTimeline.length > 0 && (
+      <section id="archiving">
+        <h2>Archiving over time</h2>
+        <p class="muted">
+          Total number of archives created, week by week.
+          {arch.firstMonth > 0 && (
+            <>
+              {" "}
+              {fmt(arch.firstMonth)} archives ({pct((100 * arch.firstMonth) / Math.max(1, arch.dated))}) were
+              made in the first 30 days
+              {arch.busiestWeek && (
+                <>
+                  , and the busiest week, starting <span class="num">{arch.busiestWeek.week}</span>, saw{" "}
+                  {fmt(arch.busiestWeek.count)}
+                </>
+              )}
+              .
+            </>
+          )}
+          {arch.undated > 0 && <> {fmt(arch.undated)} archives have no recorded date and are not included.</>}
+        </p>
+        <TimeChart
+          kind="area"
+          color="blue"
+          points={archivingTimeline.map((w) => ({
+            date: w.week,
+            value: w.total,
+            title: `Week of ${w.week}: ${fmt(w.count)} new, ${fmt(w.total)} in total`,
+          }))}
+          label="Cumulative number of web archives created over time"
+        />
+      </section>
+    )
+  }
+
+  <section id="institutions" class="two-col">
+    <div>
+      <h2>Institutions by type</h2>
+      <BarList
+        items={authoritiesByType.map((t) => ({
+          ...t,
+          href: `${instUrl}?institution_type=${encodeURIComponent(t.label)}`,
+        }))}
+      />
+    </div>
+    <div>
+      <h2>Most archived institutions</h2>
+      <BarList
+        items={mostArchived.map(({ a, n }) => ({
+          label: a.name_en || a.name_ver,
+          value: n,
+          href: authorityUrl(a.ID),
+        }))}
+      />
+    </div>
+  </section>
+
+  <section id="records" class="two-col">
+    <div>
+      <h2>Archive completeness</h2>
+      <p class="muted">How completely each website was captured, as assessed by the archivists.</p>
+      <BarList items={completeness} />
+    </div>
+    <div>
+      <h2>Institution records</h2>
+      <p class="muted">Share of institution records that include each kind of information.</p>
+      <BarList
+        items={recordCoverage.map((c) => ({ label: c.label, value: c.pct }))}
+        max={100}
+        format={(n) => `${Math.round(n)}%`}
+      />
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .lede {
+    font-size: 1.15rem;
+  }
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem 2rem;
+    margin: 2rem 0;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  dt {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  dd {
+    margin: 0.2rem 0 0;
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1.1;
+  }
+  .of {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    font-size: 0.95rem;
+  }
+  section {
+    margin-top: 3.5rem;
+    scroll-margin-top: 1rem;
+  }
+  section > h2,
+  .two-col h2 {
+    margin-top: 0;
+  }
+  .region-layout {
+    display: grid;
+    gap: 1.5rem 3rem;
+  }
+  @media (min-width: 960px) {
+    .region-layout {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+  .choropleth {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .choropleth path {
+    stroke: var(--bg);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+  }
+  .choropleth .base {
+    fill: #34373d;
+  }
+  .choropleth .fill {
+    fill: var(--yellow);
+  }
+  .choropleth a:hover .base {
+    fill: #4a4e56;
+  }
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .ramp {
+    flex: 0 1 160px;
+    height: 10px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(255, 213, 0, 0.08), var(--yellow)), #34373d;
+  }
+  .gone {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .gone li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    padding: 0.55rem 0.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .gone a:first-of-type {
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .host {
+    font-weight: 500;
+  }
+  .inst {
+    margin-left: auto;
+    font-size: 0.92rem;
+  }
+  .narrow {
+    max-width: 720px;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem 4rem;
+  }
+</style>

@@ -1,0 +1,38 @@
+---
+// Knappar för att se arkivkopian. "Replay" öppnar vår egen uppspelningssida;
+// Wayback Machine är fortfarande en extern länk.
+import { waybackUrl } from "../lib/url.js";
+import { replaySource, replayPageUrl } from "../lib/replay.js";
+
+interface Props {
+  resource: { ID: number; collection_url: string; wacz_url?: string | null; wacz_file?: string | null };
+  compact?: boolean;
+}
+const { resource, compact = false } = Astro.props;
+const canReplay = Boolean(replaySource(resource));
+---
+
+<div class:list={["archive-links", { compact }]}>
+  {
+    canReplay && (
+      <a class="button primary" href={replayPageUrl(resource.ID)}>
+        {compact ? "Replay" : "Replay SUCHO archive"}
+      </a>
+    )
+  }
+  <a class="button" href={waybackUrl(resource.collection_url)} target="_blank" rel="noopener">
+    {compact ? "Wayback" : "Wayback Machine"}
+  </a>
+</div>
+
+<style>
+  .archive-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .compact .button {
+    padding: 0.3em 0.7em;
+    font-size: 0.85rem;
+  }
+</style>

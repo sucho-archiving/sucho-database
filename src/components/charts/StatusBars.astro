@@ -1,0 +1,58 @@
+---
+
+
+interface Row {
+  key: string;
+  online: number;
+  offline: number;
+  checked: number;
+  onlinePct: number;
+}
+interface Props {
+  rows: Row[];
+}
+const { rows } = Astro.props;
+---
+
+<ol class="status-bars">
+  {
+    rows.map((r) => (
+      <li>
+        <span class="label">{r.key}</span>
+        <span class="value num">
+          {Math.round(r.onlinePct)}% online <span class="muted">of {r.checked.toLocaleString("en-US")}</span>
+        </span>
+        <span
+          class="bar"
+          role="img"
+          aria-label={`${r.online} online, ${r.offline} offline`}
+          style={`--on:${r.onlinePct.toFixed(1)}%`}
+        />
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .status-bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1rem;
+    padding: 0.45rem 0;
+  }
+  .value {
+    font-size: 0.92rem;
+  }
+  .bar {
+    grid-column: 1 / -1;
+    height: 12px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px var(--offline-line);
+    background: linear-gradient(var(--online), var(--online)) no-repeat left / var(--on) 100%;
+  }
+</style>

@@ -1,0 +1,154 @@
+---
+
+import "@fontsource-variable/jost";
+import "../styles/global.css";
+import { url } from "../lib/url.js";
+
+interface Props {
+  title: string;
+  description?: string;
+  fullBleed?: boolean;
+}
+
+const {
+  title,
+  fullBleed = false,
+  description = "Web archives of Ukrainian cultural institutions, created by SUCHO volunteers.",
+} = Astro.props;
+
+const nav = [
+  ["Institutions", url("/Archives/Authorities/")],
+  ["Archived sites", url("/Archives/Resources/")],
+  ["Map", url("/Archives/Map/")],
+  ["Statistics", url("/Archives/Statistics/")],
+];
+
+const current = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" sizes="32x32" href={url("/static/favicon-32.png")} />
+    <link rel="apple-touch-icon" href={url("/static/apple-touch-icon.png")} />
+  </head>
+  <body class:list={{ "full-bleed": fullBleed }}>
+    <header class="site-header">
+      <div class="inner">
+        <a class="brand" href={url("/")}>
+          <img src={url("/static/sucho-logo-96.png")} alt="" width="48" height="48" />
+          <span><strong>SUCHO</strong> Web Archives</span>
+        </a>
+        <nav aria-label="Main">
+          {
+            nav.map(([label, href]) => (
+              <a href={href} aria-current={current.startsWith(href) ? "page" : undefined}>
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    {!fullBleed && (
+    <footer class="site-footer">
+      <div class="inner">
+        <div>
+          <h3>Is this your institution?</h3>
+          <p>
+            If your website or collection was web-archived and you would like to be reunited
+            with your data, contact the SUCHO coordinators at info at{" "}
+            <a href="https://sucho.org">sucho.org</a>.
+          </p>
+        </div>
+        <div>
+          <h3>License</h3>
+          <p>
+            All collective works created by SUCHO are licensed under{" "}
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. The{" "}
+            rights of all other works are reserved by the respective rights holders.
+          </p>
+        </div>
+      </div>
+    </footer>
+    )}
+  </body>
+</html>
+
+<style>
+  .site-header {
+    /* Tunn rand i logotypens blått och gult */
+    border-top: 3px solid var(--blue-deep);
+    box-shadow: inset 0 3px 0 var(--yellow);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .inner {
+    width: var(--wrap);
+    margin: 0 auto;
+  }
+  .site-header .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    padding: 1rem 0 0.9rem;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text);
+    font-size: 1.2rem;
+    letter-spacing: 0.01em;
+  }
+  .brand:hover {
+    text-decoration: none;
+  }
+  .brand strong {
+    font-weight: 600;
+  }
+  nav {
+    display: flex;
+    gap: 1.75rem;
+  }
+  nav a {
+    color: var(--muted);
+    padding: 0.25rem 0;
+    border-bottom: 2px solid transparent;
+  }
+  nav a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  nav a[aria-current="page"] {
+    color: var(--text);
+    border-bottom-color: var(--yellow);
+  }
+  .site-footer {
+    border-top: 1px solid var(--line);
+    background: #212326;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+  .site-footer .inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem 3rem;
+    padding: 2.5rem 0 2rem;
+  }
+  .site-footer h3 {
+    color: var(--text);
+    font-size: 1rem;
+  }
+</style>

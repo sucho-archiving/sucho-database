@@ -1,0 +1,72 @@
+---
+
+
+interface Item {
+  label: string;
+  value: number;
+  href?: string;
+  note?: string;
+}
+interface Props {
+  items: Item[];
+  max?: number;
+  format?: (n: number) => string;
+}
+const { items, format = (n) => n.toLocaleString("en-US") } = Astro.props;
+const max = Astro.props.max ?? Math.max(1, ...items.map((i) => i.value));
+---
+
+<ol class="bars">
+  {
+    items.map((i) => {
+      const Tag = i.href ? "a" : "div";
+      return (
+        <li>
+          <Tag class="row" href={i.href}>
+            <span class="label">{i.label}</span>
+            <span class="value num">
+              {format(i.value)}
+              {i.note && <span class="note"> {i.note}</span>}
+            </span>
+            <span class="bar" style={`--w:${((i.value / max) * 100).toFixed(1)}%`} />
+          </Tag>
+        </li>
+      );
+    })
+  }
+</ol>
+
+<style>
+  .bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    padding: 0.4rem 0;
+    color: var(--text);
+  }
+  a.row:hover {
+    text-decoration: none;
+  }
+  a.row:hover .label {
+    text-decoration: underline;
+  }
+  .value {
+    color: var(--muted);
+  }
+  .note {
+    font-size: 0.85em;
+  }
+  .bar {
+    grid-column: 1 / -1;
+    height: 6px;
+    border-radius: 2px;
+    background:
+      linear-gradient(var(--blue), var(--blue)) no-repeat left / var(--w) 100%,
+      var(--surface-2);
+  }
+</style>
